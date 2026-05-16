@@ -117,10 +117,28 @@ end
 
 local currentClass, currentSpec
 
+
 local function GlowTracker_RefreshEditBoxSize()
     if not exportEditBox then return end
-    exportEditBox:SetWidth(540) -- same width you used originally
-    exportEditBox:SetHeight(exportEditBox:GetStringHeight() + 20)
+
+    local width = 540
+    exportEditBox:SetWidth(width)
+
+    -- Prefer measuring the underlying FontString (more compatible than EditBox:GetStringHeight())
+    local fs = exportEditBox.GetFontString and exportEditBox:GetFontString()
+    local textHeight = 0
+
+    if fs and fs.GetStringHeight then
+        textHeight = fs:GetStringHeight() or 0
+    end
+
+    -- Keep a minimum height so the box doesn't collapse on first open / empty text
+    local minHeight = 200
+    local padding = 20
+    local h = textHeight + padding
+    if h < minHeight then h = minHeight end
+
+    exportEditBox:SetHeight(h)
 end
 
 local function GlowTracker_UpdateExportText()
@@ -242,7 +260,7 @@ local function GlowTracker_CreateExportWindow()
 -- Select All button (left of the hint)
 local selectAllBtn = CreateFrame("Button", nil, exportFrame, "UIPanelButtonTemplate")
 selectAllBtn:SetSize(80, 22)
-selectAllBtn:SetPoint("LEFT", specDropDown, "RIGHT", 10, 0)
+selectAllBtn:SetPoint("LEFT", specDropDown, "RIGHT", 120, 0)
 selectAllBtn:SetText("Select All")
 selectAllBtn:SetScript("OnClick", function()
     if exportEditBox then
