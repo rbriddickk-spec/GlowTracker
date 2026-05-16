@@ -117,6 +117,12 @@ end
 
 local currentClass, currentSpec
 
+local function GlowTracker_RefreshEditBoxSize()
+    if not exportEditBox then return end
+    exportEditBox:SetWidth(540) -- same width you used originally
+    exportEditBox:SetHeight(exportEditBox:GetStringHeight() + 20)
+end
+
 local function GlowTracker_UpdateExportText()
     if not exportEditBox or not currentClass or not currentSpec then return end
 
@@ -192,12 +198,6 @@ local function GlowTracker_InitSpecDropDown()
 
     UIDropDownMenu_SetText(specDropDown, currentSpec or "Spec")
 end
-local function GlowTracker_RefreshEditBoxSize()
-    if not exportEditBox then return end
-    exportEditBox:SetWidth(540) -- same width you used originally
-    exportEditBox:SetHeight(exportEditBox:GetStringHeight() + 20)
-end
-
 
 local function GlowTracker_CreateExportWindow()
     if exportFrame then return end
