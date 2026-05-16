@@ -119,10 +119,13 @@ local currentClass, currentSpec
 
 local function GlowTracker_UpdateExportText()
     if not exportEditBox or not currentClass or not currentSpec then return end
+
     exportEditBox:SetText(GlowTracker_BuildExportText(currentClass, currentSpec))
+    GlowTracker_RefreshEditBoxSize()
     exportEditBox:HighlightText(0, 0)
     exportEditBox:SetCursorPosition(0)
 end
+
 
 local function GlowTracker_InitClassDropDown()
     if not classDropDown then return end
@@ -189,6 +192,11 @@ local function GlowTracker_InitSpecDropDown()
 
     UIDropDownMenu_SetText(specDropDown, currentSpec or "Spec")
 end
+local function GlowTracker_RefreshEditBoxSize()
+    if not exportEditBox then return end
+    exportEditBox:SetWidth(540) -- same width you used originally
+    exportEditBox:SetHeight(exportEditBox:GetStringHeight() + 20)
+end
 
 
 local function GlowTracker_CreateExportWindow()
@@ -231,18 +239,71 @@ local function GlowTracker_CreateExportWindow()
     specDropDown = CreateFrame("Frame", "GlowTrackerSpecDropDown", exportFrame, "UIDropDownMenuTemplate")
     specDropDown:SetPoint("TOPLEFT", 200, -35)
 
-    local scrollFrame = CreateFrame("ScrollFrame", "GlowTrackerExportScrollFrame", exportFrame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -80)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
+-- Select All button (left of the hint)
+local selectAllBtn = CreateFrame("Button", nil, exportFrame, "UIPanelButtonTemplate")
+selectAllBtn:SetSize(80, 22)
+selectAllBtn:SetPoint("LEFT", specDropDown, "RIGHT", 10, 0)
+selectAllBtn:SetText("Select All")
+selectAllBtn:SetScript("OnClick", function()
+    if exportEditBox then
+        exportEditBox:HighlightText()
+        exportEditBox:SetFocus()
+        copyHint:SetAlpha(1) -- brighten text
+    end
+end)
 
-    exportEditBox = CreateFrame("EditBox", "GlowTrackerExportEditBox", scrollFrame)
-    exportEditBox:SetMultiLine(true)
-    exportEditBox:SetFontObject(ChatFontNormal)
-    exportEditBox:SetWidth(540)
-    exportEditBox:SetAutoFocus(false)
-    exportEditBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+-- Ctrl+C indicator text (to the right of the button)
+local copyHint = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+copyHint:SetPoint("LEFT", selectAllBtn, "RIGHT", 10, 0)
+copyHint:SetText("Press Ctrl+C")
+copyHint:SetAlpha(0.3)
 
-    scrollFrame:SetScrollChild(exportEditBox)
+
+	exportEditBox:SetScript("OnKeyDown", function(self, key)
+		if IsControlKeyDown() and (key == "C" or key == "A") then
+			self:SetPropagateKeyboardInput(true)
+			return
+		end
+		self:SetPropagateKeyboardInput(false)
+	end)
+
+
+
+	exportEditBox:SetScript("OnKeyUp", function(self)
+		self:SetPropagateKeyboardInput(false)
+	end)
+	exportEditBox:SetScript("OnMouseDown", function()
+		copyHint:SetAlpha(0.3)
+	end)
+
+
+
+-- Scroll frame (moved slightly lower to avoid overlap)
+local scrollFrame = CreateFrame("ScrollFrame", "GlowTrackerExportScrollFrame", exportFrame, "UIPanelScrollFrameTemplate")
+scrollFrame:SetPoint("TOPLEFT", 20, -90)
+scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
+
+exportEditBox = CreateFrame("EditBox", "GlowTrackerExportEditBox", scrollFrame)
+exportEditBox:SetMultiLine(true)
+exportEditBox:SetFontObject(ChatFontNormal)
+exportEditBox:SetWidth(540)
+exportEditBox:SetAutoFocus(false)
+exportEditBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+scrollFrame:SetScrollChild(exportEditBox)
+
+-- read‑only protection
+exportEditBox:SetScript("OnKeyDown", function(self, key)
+    if IsControlKeyDown() and (key == "C" or key == "A") then
+        self:SetPropagateKeyboardInput(true)
+        return
+    end
+    self:SetPropagateKeyboardInput(false)
+end)
+
+exportEditBox:SetScript("OnMouseDown", function()
+    copyHint:SetAlpha(0.3)
+end)
+
 
     if GlowTrackerDB.window.x ~= 0 and GlowTrackerDB.window.y ~= 0 then
         exportFrame:ClearAllPoints()
@@ -256,6 +317,7 @@ local function GlowTracker_CreateExportWindow()
     GlowTracker_InitClassDropDown()
     GlowTracker_InitSpecDropDown()
     GlowTracker_UpdateExportText()
+
 end
 
 local function GlowTracker_ToggleExportWindow()
