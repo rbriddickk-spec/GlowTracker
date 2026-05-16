@@ -1,0 +1,6 @@
+## Interface: 70300
+## Title: GlowTracker
+## Notes: Learns spell glows automatically
+## SavedVariables: GlowSpellsDB
+
+GlowTracker.lua
