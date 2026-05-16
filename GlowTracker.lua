@@ -259,24 +259,6 @@ copyHint:SetText("Press Ctrl+C")
 copyHint:SetAlpha(0.3)
 
 
-	exportEditBox:SetScript("OnKeyDown", function(self, key)
-		if IsControlKeyDown() and (key == "C" or key == "A") then
-			self:SetPropagateKeyboardInput(true)
-			return
-		end
-		self:SetPropagateKeyboardInput(false)
-	end)
-
-
-
-	exportEditBox:SetScript("OnKeyUp", function(self)
-		self:SetPropagateKeyboardInput(false)
-	end)
-	exportEditBox:SetScript("OnMouseDown", function()
-		copyHint:SetAlpha(0.3)
-	end)
-
-
 
 -- Scroll frame (moved slightly lower to avoid overlap)
 local scrollFrame = CreateFrame("ScrollFrame", "GlowTrackerExportScrollFrame", exportFrame, "UIPanelScrollFrameTemplate")
@@ -487,6 +469,7 @@ local function ExportGlowDB()
     print("GlowTracker Export End.")
 end
 
-SLASH_GLOWEXPORT1 = "/glowexport"
-SlashCmdList["GLOWEXPORT"] = ExportGlowDB
+-- NOTE: /glowexport is reserved for toggling the export window above.
+-- If you want to print the export to chat, call ExportGlowDB() from /glowdump
+-- or add a separate slash command here.
 
