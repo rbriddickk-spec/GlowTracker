@@ -85,6 +85,7 @@ f:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 local exportFrame, exportEditBox, classDropDown, copyHint
+local lastExportText = ""
 
 local function GlowTracker_GetClassSpecList()
     local classes = {}
@@ -177,7 +178,9 @@ end
 local function GlowTracker_UpdateExportText()
     if not exportEditBox or not currentClass then return end
 
-    exportEditBox:SetText(GlowTracker_BuildExportText(currentClass))
+   local text = GlowTracker_BuildExportText(currentClass)
+		lastExportText = text or ""
+		exportEditBox:SetText(lastExportText)
     GlowTracker_RefreshEditBoxSize()
     exportEditBox:HighlightText(0, 0)
     exportEditBox:SetCursorPosition(0)
@@ -281,13 +284,36 @@ exportEditBox:SetAutoFocus(false)
 exportEditBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
 scrollFrame:SetScrollChild(exportEditBox)
 
--- read‑only protection
+-- read-only protection (allow selection + Ctrl+C/Ctrl+A, prevent edits)
 exportEditBox:SetScript("OnKeyDown", function(self, key)
+    -- Allow copy/select-all
     if IsControlKeyDown() and (key == "C" or key == "A") then
         self:SetPropagateKeyboardInput(true)
         return
     end
+
+    -- Block keys that commonly modify the EditBox
+    if key == "BACKSPACE" or key == "DELETE" or key == "SPACE" or key == "ENTER" then
+        self:SetPropagateKeyboardInput(false)
+        if self:GetText() ~= lastExportText then
+            self:SetText(lastExportText)
+        end
+        self:HighlightText(0, 0)
+        self:SetCursorPosition(0)
+        return
+    end
+
+    -- Block everything else (mouse selection still works)
     self:SetPropagateKeyboardInput(false)
+end)
+
+-- If text changes due to user input anyway, revert immediately
+exportEditBox:SetScript("OnTextChanged", function(self, userInput)
+    if userInput then
+        self:SetText(lastExportText)
+        self:HighlightText(0, 0)
+        self:SetCursorPosition(0)
+    end
 end)
 
 exportEditBox:SetScript("OnMouseDown", function()
