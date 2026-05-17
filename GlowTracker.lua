@@ -29,7 +29,7 @@ local function GetSpecKey()
 end
 
 local function AddGlow(spellID)
-    if not spellID then return end
+    if type(spellID) ~= "number" then return end
     local class, spec = GetSpecKey()
     GlowTrackerDB.glows[class] = GlowTrackerDB.glows[class] or {}
     GlowTrackerDB.glows[class][spec] = GlowTrackerDB.glows[class][spec] or {}
@@ -116,10 +116,7 @@ local function GlowTracker_BuildExportText(class, spec)
         local aLower = string.lower(a.name)
         local bLower = string.lower(b.name)
         if aLower == bLower then
-            if a.name == b.name then
-                return a.spellID < b.spellID
-            end
-            return a.name < b.name
+            return a.spellID < b.spellID
         end
         return aLower < bLower
     end)
