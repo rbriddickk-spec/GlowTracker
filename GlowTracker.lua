@@ -143,7 +143,7 @@ local function GlowTracker_BuildExportText(class)
     if #lines == 0 then
         return "-- No data for " .. class
     else
-        lines[#lines] = nil
+        table.remove(lines)
         return table.concat(lines, "\n")
     end
 end
