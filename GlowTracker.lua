@@ -274,6 +274,12 @@ local function GlowTracker_CreateExportWindow()
     specDropDown = CreateFrame("Frame", "GlowTrackerSpecDropDown", exportFrame, "UIDropDownMenuTemplate")
     specDropDown:SetPoint("TOPLEFT", 200, -35)
 
+-- Ctrl+C indicator text (create first)
+local copyHint = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+copyHint:SetPoint("LEFT", specDropDown, "RIGHT", 210, 0) -- adjust as you like
+copyHint:SetText("Press Ctrl+C")
+copyHint:SetAlpha(0.3)
+
 -- Select All button (left of the hint)
 local selectAllBtn = CreateFrame("Button", nil, exportFrame, "UIPanelButtonTemplate")
 selectAllBtn:SetSize(80, 22)
@@ -283,17 +289,9 @@ selectAllBtn:SetScript("OnClick", function()
     if exportEditBox then
         exportEditBox:HighlightText()
         exportEditBox:SetFocus()
-        copyHint:SetAlpha(1) -- brighten text
+        copyHint:SetAlpha(1)
     end
 end)
-
--- Ctrl+C indicator text (to the right of the button)
-local copyHint = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-copyHint:SetPoint("LEFT", selectAllBtn, "RIGHT", 10, 0)
-copyHint:SetText("Press Ctrl+C")
-copyHint:SetAlpha(0.3)
-
-
 
 -- Scroll frame (moved slightly lower to avoid overlap)
 local scrollFrame = CreateFrame("ScrollFrame", "GlowTrackerExportScrollFrame", exportFrame, "UIPanelScrollFrameTemplate")
