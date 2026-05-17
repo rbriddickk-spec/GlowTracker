@@ -1,6 +1,7 @@
 GlowSpellsDB   = GlowSpellsDB   or {}
 GlowTrackerDB  = GlowTrackerDB  or {}
 GlowTrackerDB.glows = GlowTrackerDB.glows or {}
+GlowTrackerDB.migratedLegacyToGlows = GlowTrackerDB.migratedLegacyToGlows or false
 GlowTrackerDB.minimap = GlowTrackerDB.minimap or {
     angle = 45,   -- degrees around minimap
     free  = false,
