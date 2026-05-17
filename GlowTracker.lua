@@ -84,7 +84,7 @@ f:SetScript("OnEvent", function(self, event, ...)
         end
     end
 end)
-local exportFrame, exportEditBox, classDropDown, specDropDown
+local exportFrame, exportEditBox, classDropDown, copyHint
 
 local function GlowTracker_GetClassSpecList()
     local classes = {}
@@ -100,36 +100,53 @@ local function GlowTracker_GetClassSpecList()
     return classes
 end
 
-local function GlowTracker_BuildExportText(class, spec)
-    if not GlowTrackerDB.glows[class] or not GlowTrackerDB.glows[class][spec] then
-        return "-- No data for " .. class .. " " .. spec
+local function GlowTracker_BuildExportText(class)
+    if not GlowTrackerDB.glows[class] then
+        return "-- No data for " .. class
     end
 
-    local sorted = {}
-    for spellID in pairs(GlowTrackerDB.glows[class][spec]) do
-        local name = GetSpellInfo(spellID) or "Unknown"
-        table.insert(sorted, { spellID = spellID, name = name })
+    local specNames = {}
+    for spec in pairs(GlowTrackerDB.glows[class]) do
+        table.insert(specNames, spec)
     end
-    if #sorted == 0 then
-        return "-- No data for " .. class .. " " .. spec
-    end
-    table.sort(sorted, function(a, b)
-        local aLower = string.lower(a.name)
-        local bLower = string.lower(b.name)
-        if aLower == bLower then
-            return a.spellID < b.spellID
-        end
-        return aLower < bLower
-    end)
+    table.sort(specNames)
 
     local lines = {}
-    for _, entry in ipairs(sorted) do
-        table.insert(lines, string.format("%s = %d", entry.name, entry.spellID))
+    for _, spec in ipairs(specNames) do
+        local sorted = {}
+        for spellID in pairs(GlowTrackerDB.glows[class][spec]) do
+            local name = GetSpellInfo(spellID) or "Unknown"
+            table.insert(sorted, { spellID = spellID, name = name })
+        end
+
+        if #sorted > 0 then
+            table.sort(sorted, function(a, b)
+                local aLower = string.lower(a.name)
+                local bLower = string.lower(b.name)
+                if aLower == bLower then
+                    return a.spellID < b.spellID
+                end
+                return aLower < bLower
+            end)
+
+            if #lines > 0 then
+                table.insert(lines, "")
+            end
+            table.insert(lines, string.format("[%s]", spec))
+            for _, entry in ipairs(sorted) do
+                table.insert(lines, string.format("%s = %d", entry.name, entry.spellID))
+            end
+        end
     end
+
+    if #lines == 0 then
+        return "-- No data for " .. class
+    end
+
     return table.concat(lines, "\n")
 end
 
-local currentClass, currentSpec
+local currentClass
 
 
 local function GlowTracker_RefreshEditBoxSize()
@@ -156,47 +173,12 @@ local function GlowTracker_RefreshEditBoxSize()
 end
 
 local function GlowTracker_UpdateExportText()
-    if not exportEditBox or not currentClass or not currentSpec then return end
+    if not exportEditBox or not currentClass then return end
 
-    exportEditBox:SetText(GlowTracker_BuildExportText(currentClass, currentSpec))
+    exportEditBox:SetText(GlowTracker_BuildExportText(currentClass))
     GlowTracker_RefreshEditBoxSize()
     exportEditBox:HighlightText(0, 0)
     exportEditBox:SetCursorPosition(0)
-end
-
-local function GlowTracker_InitSpecDropDown()
-    if not specDropDown then return end
-
-    local classes = GlowTracker_GetClassSpecList()
-    local specsForClass = {}
-
-    for _, c in ipairs(classes) do
-        if c.class == currentClass then
-            specsForClass = c.specs
-            break
-        end
-    end
-
-    UIDropDownMenu_Initialize(specDropDown, function(self, level)
-        for _, spec in ipairs(specsForClass) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = spec
-            info.func = function()
-                currentSpec = spec
-                UIDropDownMenu_SetText(specDropDown, spec)
-                GlowTracker_UpdateExportText()
-            end
-            info.checked = (spec == currentSpec)
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
-
-    -- Default to first spec if none selected
-    if not currentSpec and specsForClass[1] then
-        currentSpec = specsForClass[1]
-    end
-
-    UIDropDownMenu_SetText(specDropDown, currentSpec or "Spec")
 end
 
 local function GlowTracker_InitClassDropDown()
@@ -211,15 +193,7 @@ local function GlowTracker_InitClassDropDown()
             info.func = function()
                 currentClass = c.class
                 UIDropDownMenu_SetText(classDropDown, c.class)
-
-                -- Reset spec when class changes
-				currentSpec = nil
-				-- Force the spec dropdown UI to forget the previous selection/text
-				UIDropDownMenu_SetSelectedID(specDropDown, nil)
-				UIDropDownMenu_SetText(specDropDown, "Spec")
-
-				GlowTracker_InitSpecDropDown()
-				GlowTracker_UpdateExportText()
+                GlowTracker_UpdateExportText()
             end
             info.checked = (c.class == currentClass)
             UIDropDownMenu_AddButton(info, level)
@@ -271,22 +245,19 @@ local function GlowTracker_CreateExportWindow()
     classDropDown = CreateFrame("Frame", "GlowTrackerClassDropDown", exportFrame, "UIDropDownMenuTemplate")
     classDropDown:SetPoint("TOPLEFT", 15, -35)
 
-    specDropDown = CreateFrame("Frame", "GlowTrackerSpecDropDown", exportFrame, "UIDropDownMenuTemplate")
-    specDropDown:SetPoint("TOPLEFT", 200, -35)
-
 -- Ctrl+C indicator text (create first)
-local copyHint = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-copyHint:SetPoint("LEFT", specDropDown, "RIGHT", 210, 0) -- adjust as you like
+copyHint = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+copyHint:SetPoint("LEFT", classDropDown, "RIGHT", 210, 0) -- adjust as you like
 copyHint:SetText("Press Ctrl+C")
 copyHint:SetAlpha(0.3)
 
 -- Select All button (left of the hint)
 local selectAllBtn = CreateFrame("Button", nil, exportFrame, "UIPanelButtonTemplate")
 selectAllBtn:SetSize(80, 22)
-selectAllBtn:SetPoint("LEFT", specDropDown, "RIGHT", 120, 0)
+selectAllBtn:SetPoint("LEFT", classDropDown, "RIGHT", 120, 0)
 selectAllBtn:SetText("Select All")
 selectAllBtn:SetScript("OnClick", function()
-    if exportEditBox then
+    if exportEditBox and copyHint then
         exportEditBox:HighlightText()
         exportEditBox:SetFocus()
         copyHint:SetAlpha(1)
@@ -316,7 +287,9 @@ exportEditBox:SetScript("OnKeyDown", function(self, key)
 end)
 
 exportEditBox:SetScript("OnMouseDown", function()
-    copyHint:SetAlpha(0.3)
+    if copyHint then
+        copyHint:SetAlpha(0.3)
+    end
 end)
 
 
@@ -330,7 +303,6 @@ end)
     end
 
     GlowTracker_InitClassDropDown()
-    GlowTracker_InitSpecDropDown()
     GlowTracker_UpdateExportText()
 
 end
@@ -346,7 +318,6 @@ local function GlowTracker_ToggleExportWindow()
         exportFrame:Show()
         GlowTrackerDB.window.shown = true
         GlowTracker_InitClassDropDown()
-        GlowTracker_InitSpecDropDown()
         GlowTracker_UpdateExportText()
     end
 end
