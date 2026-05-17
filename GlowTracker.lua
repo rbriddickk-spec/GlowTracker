@@ -110,7 +110,7 @@ local function GlowTracker_BuildExportText(class)
     for spec in pairs(classSpecs) do
         table.insert(specNames, spec)
     end
-    table.sort(specNames, function(a, b) return a < b end)
+    table.sort(specNames)
 
     local lines = {}
     for _, spec in ipairs(specNames) do
@@ -142,10 +142,10 @@ local function GlowTracker_BuildExportText(class)
 
     if #lines == 0 then
         return "-- No data for " .. class
+    else
+        lines[#lines] = nil
+        return table.concat(lines, "\n")
     end
-
-    lines[#lines] = nil
-    return table.concat(lines, "\n")
 end
 
 local currentClass
