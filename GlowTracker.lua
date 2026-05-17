@@ -113,10 +113,18 @@ local function GlowTracker_BuildExportText(class, spec)
         return "-- No data for " .. class .. " " .. spec
     end
     table.sort(sorted, function(a, b)
+        local aLower = string.lower(a.name)
+        local bLower = string.lower(b.name)
+        if aLower == bLower then
+            if a.name == b.name then
+                return a.spellID < b.spellID
+            end
+            return a.name < b.name
+        end
         if a.name == b.name then
             return a.spellID < b.spellID
         end
-        return a.name < b.name
+        return aLower < bLower
     end)
 
     local lines = {}
