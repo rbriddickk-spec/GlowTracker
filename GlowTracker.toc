@@ -3,4 +3,5 @@
 ## Notes: Learns spell glows automatically
 ## SavedVariables: GlowTrackerDB
 
+GlowTrackerSeed.lua
 GlowTracker.lua
