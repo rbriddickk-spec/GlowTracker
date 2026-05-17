@@ -164,38 +164,6 @@ local function GlowTracker_UpdateExportText()
     exportEditBox:SetCursorPosition(0)
 end
 
-
-local function GlowTracker_InitClassDropDown()
-    if not classDropDown then return end
-
-    local classes = GlowTracker_GetClassSpecList()
-
-    UIDropDownMenu_Initialize(classDropDown, function(self, level)
-        for _, c in ipairs(classes) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = c.class
-            info.func = function()
-                currentClass = c.class
-                UIDropDownMenu_SetText(classDropDown, c.class)
-
-                -- Reset spec when class changes
-                currentSpec = nil
-                GlowTracker_InitSpecDropDown()
-                GlowTracker_UpdateExportText()
-            end
-            info.checked = (c.class == currentClass)
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
-
-    -- Default to first class if none selected
-    if not currentClass and classes[1] then
-        currentClass = classes[1].class
-    end
-
-    UIDropDownMenu_SetText(classDropDown, currentClass or "Class")
-end
-
 local function GlowTracker_InitSpecDropDown()
     if not specDropDown then return end
 
@@ -229,6 +197,41 @@ local function GlowTracker_InitSpecDropDown()
     end
 
     UIDropDownMenu_SetText(specDropDown, currentSpec or "Spec")
+end
+
+local function GlowTracker_InitClassDropDown()
+    if not classDropDown then return end
+
+    local classes = GlowTracker_GetClassSpecList()
+
+    UIDropDownMenu_Initialize(classDropDown, function(self, level)
+        for _, c in ipairs(classes) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = c.class
+            info.func = function()
+                currentClass = c.class
+                UIDropDownMenu_SetText(classDropDown, c.class)
+
+                -- Reset spec when class changes
+				currentSpec = nil
+				-- Force the spec dropdown UI to forget the previous selection/text
+				UIDropDownMenu_SetSelectedID(specDropDown, nil)
+				UIDropDownMenu_SetText(specDropDown, "Spec")
+
+				GlowTracker_InitSpecDropDown()
+				GlowTracker_UpdateExportText()
+            end
+            info.checked = (c.class == currentClass)
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+
+    -- Default to first class if none selected
+    if not currentClass and classes[1] then
+        currentClass = classes[1].class
+    end
+
+    UIDropDownMenu_SetText(classDropDown, currentClass or "Class")
 end
 
 local function GlowTracker_CreateExportWindow()
