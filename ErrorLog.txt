@@ -1,0 +1,59 @@
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:49: attempt to index field 'glows' (a nil value)
+Time: 05/17/26 11:06:56
+Count: 1
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:49: attempt to index field 'glows' (a nil value)
+[C]: ?
+Interface\AddOns\GlowTracker\GlowTracker.lua:49: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:40>
+Interface\AddOns\GlowTracker\GlowTracker.lua:68: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:66>
+
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:91: bad argument #1 to 'pairs' (table expected, got nil)
+Time: 05/17/26 11:06:58
+Count: 1
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:91: bad argument #1 to 'pairs' (table expected, got nil)
+[C]: ?
+[C]: in function `pairs'
+Interface\AddOns\GlowTracker\GlowTracker.lua:91: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:89>
+Interface\AddOns\GlowTracker\GlowTracker.lua:171: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:168>
+Interface\AddOns\GlowTracker\GlowTracker.lua:331: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:234>
+Interface\AddOns\GlowTracker\GlowTracker.lua:339: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:337>
+Interface\AddOns\GlowTracker\GlowTracker.lua:413: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:411>
+
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+Time: 05/17/26 11:07:17
+Count: 4
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+[C]: ?
+Interface\AddOns\GlowTracker\GlowTracker.lua:35: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:32>
+Interface\AddOns\GlowTracker\GlowTracker.lua:73: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:66>
+
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+Time: 05/17/26 11:07:21
+Count: 31
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+[C]: ?
+Interface\AddOns\GlowTracker\GlowTracker.lua:35: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:32>
+Interface\AddOns\GlowTracker\GlowTracker.lua:81: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:66>
+
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+Time: 05/17/26 11:07:20
+Count: 1
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:35: attempt to index field 'glows' (a nil value)
+[C]: ?
+Interface\AddOns\GlowTracker\GlowTracker.lua:35: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:32>
+Interface\AddOns\GlowTracker\GlowTracker.lua:73: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:66>
+[C]: ?
+[C]: in function `UseAction'
+Interface\FrameXML\SecureTemplates.lua:346: in function `handler'
+Interface\FrameXML\SecureTemplates.lua:619: in function `SecureActionButton_OnClick'
+[string "*:OnClick"]:4: in function <[string "*:OnClick"]:1>
+
+Message: Interface\AddOns\GlowTracker\GlowTracker.lua:91: bad argument #1 to 'pairs' (table expected, got nil)
+Time: 05/17/26 11:07:28
+Count: 1
+Stack: Interface\AddOns\GlowTracker\GlowTracker.lua:91: bad argument #1 to 'pairs' (table expected, got nil)
+[C]: ?
+[C]: in function `pairs'
+Interface\AddOns\GlowTracker\GlowTracker.lua:91: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:89>
+Interface\AddOns\GlowTracker\GlowTracker.lua:171: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:168>
+Interface\AddOns\GlowTracker\GlowTracker.lua:347: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:337>
+Interface\AddOns\GlowTracker\GlowTracker.lua:413: in function <Interface\AddOns\GlowTracker\GlowTracker.lua:411>
