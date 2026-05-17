@@ -121,9 +121,6 @@ local function GlowTracker_BuildExportText(class, spec)
             end
             return a.name < b.name
         end
-        if a.name == b.name then
-            return a.spellID < b.spellID
-        end
         return aLower < bLower
     end)
 
