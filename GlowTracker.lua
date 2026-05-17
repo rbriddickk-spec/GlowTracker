@@ -1,6 +1,6 @@
-GlowSpellsDB = GlowSpellsDB or {}
 GlowSpellsDB   = GlowSpellsDB   or {}
 GlowTrackerDB  = GlowTrackerDB  or {}
+GlowTrackerDB.glows = GlowTrackerDB.glows or {}
 GlowTrackerDB.minimap = GlowTrackerDB.minimap or {
     angle = 45,   -- degrees around minimap
     free  = false,
@@ -28,27 +28,48 @@ local function GetSpecKey()
     return class, specName:upper()
 end
 
-local function AddGlow(spellID, glowType, trigger)
+local function AddGlow(spellID)
+    if not spellID then return end
     local class, spec = GetSpecKey()
-    GlowSpellsDB[class] = GlowSpellsDB[class] or {}
-    GlowSpellsDB[class][spec] = GlowSpellsDB[class][spec] or {}
+    GlowTrackerDB.glows[class] = GlowTrackerDB.glows[class] or {}
+    GlowTrackerDB.glows[class][spec] = GlowTrackerDB.glows[class][spec] or {}
+    GlowTrackerDB.glows[class][spec][spellID] = true
+end
 
-    GlowSpellsDB[class][spec][spellID] = GlowSpellsDB[class][spec][spellID] or {
-        spell = spellID,
-        types = {},
-        triggers = {},
-    }
-
-    GlowSpellsDB[class][spec][spellID].types[glowType] = true
-    if trigger then
-        GlowSpellsDB[class][spec][spellID].triggers[trigger] = true
+local function MigrateLegacyGlowSpellsDB()
+    if GlowTrackerDB.migratedLegacyToGlows then return end
+    if type(GlowSpellsDB) ~= "table" then
+        GlowTrackerDB.migratedLegacyToGlows = true
+        return
     end
+
+    for class, specs in pairs(GlowSpellsDB) do
+        if type(specs) == "table" then
+            GlowTrackerDB.glows[class] = GlowTrackerDB.glows[class] or {}
+            for spec, spells in pairs(specs) do
+                if type(spells) == "table" then
+                    GlowTrackerDB.glows[class][spec] = GlowTrackerDB.glows[class][spec] or {}
+                    for spellID in pairs(spells) do
+                        local numericSpellID = tonumber(spellID)
+                        if numericSpellID then
+                            GlowTrackerDB.glows[class][spec][numericSpellID] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    GlowTrackerDB.migratedLegacyToGlows = true
 end
 
 f:SetScript("OnEvent", function(self, event, ...)
+    if event == "PLAYER_LOGIN" then
+        MigrateLegacyGlowSpellsDB()
+    end
+
     if event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" then
         local spellID = ...
-        AddGlow(spellID, "SAO", "Overlay")
+        AddGlow(spellID)
     end
 
     if event == "ACTIONBAR_UPDATE_USABLE" or event == "SPELL_UPDATE_USABLE" then
@@ -56,7 +77,7 @@ f:SetScript("OnEvent", function(self, event, ...)
             local actionType, id = GetActionInfo(slot)
             if actionType == "spell" and id then
                 if IsSpellOverlayed(id) then
-                    AddGlow(id, "USABLE", "IsSpellOverlayed")
+                    AddGlow(id)
                 end
             end
         end
@@ -66,7 +87,7 @@ local exportFrame, exportEditBox, classDropDown, specDropDown
 
 local function GlowTracker_GetClassSpecList()
     local classes = {}
-    for class, specs in pairs(GlowSpellsDB) do
+    for class, specs in pairs(GlowTrackerDB.glows) do
         local specList = {}
         for spec in pairs(specs) do
             table.insert(specList, spec)
@@ -79,39 +100,29 @@ local function GlowTracker_GetClassSpecList()
 end
 
 local function GlowTracker_BuildExportText(class, spec)
-    if not GlowSpellsDB[class] or not GlowSpellsDB[class][spec] then
+    if not GlowTrackerDB.glows[class] or not GlowTrackerDB.glows[class][spec] then
         return "-- No data for " .. class .. " " .. spec
     end
 
-    local lines = {}
-    table.insert(lines, class .. " = {")
-    table.insert(lines, "  " .. spec .. " = {")
-    for spellID, info in pairs(GlowSpellsDB[class][spec]) do
+    local sorted = {}
+    for spellID in pairs(GlowTrackerDB.glows[class][spec]) do
         local name = GetSpellInfo(spellID) or "Unknown"
-        table.insert(lines, string.format(
-            "    [%d] = { spell = %d, -- %s",
-            spellID, spellID, name
-        ))
-        table.insert(lines, "      types = {")
-        local typeKeys = {}
-        for t in pairs(info.types) do table.insert(typeKeys, t) end
-        table.sort(typeKeys)
-        for _, t in ipairs(typeKeys) do
-            table.insert(lines, "        " .. t .. " = true,")
-        end
-        table.insert(lines, "      },")
-        table.insert(lines, "      triggers = {")
-        local trigKeys = {}
-        for trig in pairs(info.triggers) do table.insert(trigKeys, trig) end
-        table.sort(trigKeys)
-        for _, trig in ipairs(trigKeys) do
-            table.insert(lines, string.format("        [\"%s\"] = true,", trig))
-        end
-        table.insert(lines, "      },")
-        table.insert(lines, "    },")
+        table.insert(sorted, { spellID = spellID, name = name })
     end
-    table.insert(lines, "  },")
-    table.insert(lines, "},")
+    if #sorted == 0 then
+        return "-- No data for " .. class .. " " .. spec
+    end
+    table.sort(sorted, function(a, b)
+        if a.name == b.name then
+            return a.spellID < b.spellID
+        end
+        return a.name < b.name
+    end)
+
+    local lines = {}
+    for _, entry in ipairs(sorted) do
+        table.insert(lines, string.format("%s = %d", entry.name, entry.spellID))
+    end
     return table.concat(lines, "\n")
 end
 
@@ -431,53 +442,28 @@ SlashCmdList["GLOWDUMP"] = function()
     local spec = GetSpecialization()
     local specName = spec and select(2, GetSpecializationInfo(spec)):upper() or "NOSPEC"
 
-    if not GlowSpellsDB[class] or not GlowSpellsDB[class][specName] then
+    if not GlowTrackerDB.glows[class] or not GlowTrackerDB.glows[class][specName] then
         print("GlowTracker: No data for", class, specName)
         return
     end
 
     print("GlowTracker: Learned spells for", class, specName)
 
-    for spellID, info in pairs(GlowSpellsDB[class][specName]) do
+    for spellID in pairs(GlowTrackerDB.glows[class][specName]) do
         local name = GetSpellInfo(spellID) or "Unknown"
-        print(
-            string.format(
-                "  %d (%s) – Types: %s",
-                spellID,
-                name,
-                table.concat((function()
-                    local t = {}
-                    for k in pairs(info.types) do table.insert(t, k) end
-                    return t
-                end)(), ", ")
-            )
-        )
+        print(string.format("  %s = %d", name, spellID))
     end
 end
 local function ExportGlowDB()
     print("GlowTracker Export Begin:")
 
-    for class, specs in pairs(GlowSpellsDB) do
+    for class, specs in pairs(GlowTrackerDB.glows) do
         print(class .. " = {")
         for spec, spells in pairs(specs) do
             print("  " .. spec .. " = {")
-            for spellID, info in pairs(spells) do
+            for spellID in pairs(spells) do
                 local name = GetSpellInfo(spellID) or "Unknown"
-                print(string.format(
-                    "    [%d] = { spell = %d, -- %s",
-                    spellID, spellID, name
-                ))
-                print("      types = {")
-                for t in pairs(info.types) do
-                    print("        " .. t .. " = true,")
-                end
-                print("      },")
-                print("      triggers = {")
-                for trig in pairs(info.triggers) do
-                    print("        [\"" .. trig .. "\"] = true,")
-                end
-                print("      },")
-                print("    },")
+                print(string.format("    %s = %d,", name, spellID))
             end
             print("  },")
         end
@@ -490,4 +476,3 @@ end
 -- NOTE: /glowexport is reserved for toggling the export window above.
 -- If you want to print the export to chat, call ExportGlowDB() from /glowdump
 -- or add a separate slash command here.
-
