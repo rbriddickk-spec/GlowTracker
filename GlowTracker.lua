@@ -1,18 +1,86 @@
 --GlowSpellsDB   = GlowSpellsDB   or {}
-GlowTrackerDB  = GlowTrackerDB  or {}
-GlowTrackerDB.glows = GlowTrackerDB.glows or {}
-GlowTrackerDB.migratedLegacyToGlows = GlowTrackerDB.migratedLegacyToGlows or false
-GlowTrackerDB.minimap = GlowTrackerDB.minimap or {
-    angle = 45,   -- degrees around minimap
-    free  = false,
-    x     = 0,
-    y     = 0,
-}
-GlowTrackerDB.window = GlowTrackerDB.window or {
-    x     = 0,
-    y     = 0,
-    shown = false,
-}
+GlowTracker = GlowTracker or {}
+
+local function EnsureDB()
+    if type(GlowTrackerDB) ~= "table" then GlowTrackerDB = {} end
+    if type(GlowTrackerDB.glows) ~= "table" then GlowTrackerDB.glows = {} end
+    if type(GlowTrackerDB.alias) ~= "table" then GlowTrackerDB.alias = {} end
+    if type(GlowTrackerDB.triggers) ~= "table" then GlowTrackerDB.triggers = {} end
+    if type(GlowTrackerDB.migratedLegacyToGlows) ~= "boolean" then
+        GlowTrackerDB.migratedLegacyToGlows = false
+    end
+    if type(GlowTrackerDB.minimap) ~= "table" then
+        GlowTrackerDB.minimap = {
+            angle = 45,   -- degrees around minimap
+            free  = false,
+            x     = 0,
+            y     = 0,
+        }
+    end
+    if type(GlowTrackerDB.window) ~= "table" then
+        GlowTrackerDB.window = {
+            x     = 0,
+            y     = 0,
+            shown = false,
+        }
+    end
+end
+
+local function MergeSeedAliases()
+    if type(GlowTrackerSeed) ~= "table" or type(GlowTrackerSeed.alias) ~= "table" then return end
+
+    for triggerSpellID, displaySpellID in pairs(GlowTrackerSeed.alias) do
+        if type(triggerSpellID) == "number" and type(displaySpellID) == "number" and GlowTrackerDB.alias[triggerSpellID] == nil then
+            GlowTrackerDB.alias[triggerSpellID] = displaySpellID
+        end
+    end
+end
+
+function GlowTracker:AddAlias(triggerSpellID, displaySpellID)
+    if type(triggerSpellID) ~= "number" or type(displaySpellID) ~= "number" then
+        return false
+    end
+
+    EnsureDB()
+    GlowTrackerDB.alias[triggerSpellID] = displaySpellID
+    return true
+end
+
+function GlowTracker:ResolveAlias(spellID)
+    if type(spellID) ~= "number" then return spellID end
+    EnsureDB()
+    return GlowTrackerDB.alias[spellID] or spellID
+end
+
+local function TrackTrigger(spellID, signature)
+    if type(spellID) ~= "number" then return end
+
+    EnsureDB()
+    local now = time()
+    local trigger = GlowTrackerDB.triggers[spellID]
+    if type(trigger) ~= "table" then
+        trigger = {
+            firstSeen = now,
+            lastSeen = now,
+            count = 1,
+        }
+        GlowTrackerDB.triggers[spellID] = trigger
+    else
+        trigger.lastSeen = now
+        trigger.count = (trigger.count or 0) + 1
+    end
+
+    if type(signature) ~= "table" then return end
+
+    if signature.texturePath ~= nil then trigger.texturePath = signature.texturePath end
+    if signature.positions ~= nil then trigger.positions = signature.positions end
+    if signature.scale ~= nil then trigger.scale = signature.scale end
+    if signature.r ~= nil then trigger.r = signature.r end
+    if signature.g ~= nil then trigger.g = signature.g end
+    if signature.b ~= nil then trigger.b = signature.b end
+end
+
+EnsureDB()
 
 
 local f = CreateFrame("Frame")
@@ -31,10 +99,11 @@ end
 
 local function AddGlow(spellID)
     if type(spellID) ~= "number" then return end
+    local resolvedSpellID = GlowTracker:ResolveAlias(spellID)
     local class, spec = GetSpecKey()
     GlowTrackerDB.glows[class] = GlowTrackerDB.glows[class] or {}
     GlowTrackerDB.glows[class][spec] = GlowTrackerDB.glows[class][spec] or {}
-    GlowTrackerDB.glows[class][spec][spellID] = true
+    GlowTrackerDB.glows[class][spec][resolvedSpellID] = true
 end
 
 local function MigrateLegacyGlowSpellsDB()
@@ -65,12 +134,22 @@ end
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
+        EnsureDB()
+        MergeSeedAliases()
         MigrateLegacyGlowSpellsDB()
     end
 
     if event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" then
-        local spellID = ...
+        local spellID, texturePath, positions, scale, r, g, b = ...
         AddGlow(spellID)
+        TrackTrigger(spellID, {
+            texturePath = texturePath,
+            positions = positions,
+            scale = scale,
+            r = r,
+            g = g,
+            b = b,
+        })
     end
 
     if event == "ACTIONBAR_UPDATE_USABLE" or event == "SPELL_UPDATE_USABLE" then
@@ -79,6 +158,7 @@ f:SetScript("OnEvent", function(self, event, ...)
             if actionType == "spell" and id then
                 if IsSpellOverlayed(id) then
                     AddGlow(id)
+                    TrackTrigger(id)
                 end
             end
         end
